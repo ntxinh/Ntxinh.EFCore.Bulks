@@ -26,7 +26,7 @@ public static class GenerateDeleteQueryExtensions
         ) return string.Empty;
 
         // Build query string
-        var sql = new StringBuilder($"DELETE FROM {tableName} WHERE {primaryKeyColumnName.Value.Value} IN @{primaryKeyColumnName.Value.Value};");
+        var sql = new StringBuilder($"DELETE FROM {tableName}{Environment.NewLine}WHERE [{primaryKeyColumnName.Value.Value}] IN @{primaryKeyColumnName.Value.Key};");
 
         return sql.ToString();
     }

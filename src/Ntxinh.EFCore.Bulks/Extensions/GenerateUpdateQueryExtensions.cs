@@ -28,13 +28,18 @@ public static class GenerateUpdateQueryExtensions
         var dataTable = DataTableHelper.CreateDataTable<T>();
 
         // Build query string
-        var sql = new StringBuilder($"UPDATE {tableName} SET ");
+        var sql = new StringBuilder($"UPDATE {tableName}{Constants.NewLine}SET ");
         var values = new StringBuilder();
         var where = string.Empty;
         bool bFirst = true;
 
-        foreach (DataColumn column in dataTable.Columns)
+        // foreach (DataColumn column in dataTable.Columns)
+        foreach (var columnMapping in columnMappings)
         {
+            if (columnMapping.Equals(default(KeyValuePair<string, string>))) continue;
+            if (!dataTable.Columns.Contains(columnMapping.Key)) continue;
+            var column = dataTable.Columns[columnMapping.Key];
+
             if (!column.AutoIncrement
                 && primaryKeyColumnName is not null
                 && !primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
@@ -43,17 +48,12 @@ public static class GenerateUpdateQueryExtensions
                 column.AutoIncrement = true;
             }
 
-            var newColumnName = column.ColumnName;
-            var columnMapping = columnMappings.FirstOrDefault(x => x.Key == column.ColumnName);
-            if (!columnMapping.Equals(default(KeyValuePair<string, string>)))
-            {
-                newColumnName = columnMapping.Value;
-            }
+            var newColumnName = columnMapping.Value;
             if (string.IsNullOrEmpty(newColumnName)) continue;
 
             if (column.AutoIncrement)
             {
-                where = $" WHERE {primaryKeyColumnName.Value.Value}=@{primaryKeyColumnName.Value.Value};";
+                where = $"{Constants.NewLine}WHERE [{primaryKeyColumnName.Value.Value}]=@{primaryKeyColumnName.Value.Key};";
             }
             else
             {
@@ -64,7 +64,7 @@ public static class GenerateUpdateQueryExtensions
                     values.Append(", ");
                 }
 
-                values.Append($"{newColumnName}={Helpers.SpecialRuleForColumnValue(column.ColumnName)}");
+                values.Append($"[{newColumnName}]={Helpers.SpecialRuleForColumnValue(column.ColumnName)}");
             }
         }
         sql.Append(values.ToString());

@@ -34,8 +34,13 @@ public static class GenerateInsertQueryExtensions
         bool bIdentity = false;
         string identityType = string.Empty;
 
-        foreach (DataColumn column in dataTable.Columns)
+        // foreach (DataColumn column in dataTable.Columns)
+        foreach (var columnMapping in columnMappings)
         {
+            if (columnMapping.Equals(default(KeyValuePair<string, string>))) continue;
+            if (!dataTable.Columns.Contains(columnMapping.Key)) continue;
+            var column = dataTable.Columns[columnMapping.Key];
+
             if (!column.AutoIncrement
                 && primaryKeyColumnName is not null
                 && !primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
@@ -69,12 +74,7 @@ public static class GenerateInsertQueryExtensions
             }
             else
             {
-                var newColumnName = column.ColumnName;
-                var columnMapping = columnMappings.FirstOrDefault(x => x.Key == column.ColumnName);
-                if (!columnMapping.Equals(default(KeyValuePair<string, string>)))
-                {
-                    newColumnName = columnMapping.Value;
-                }
+                var newColumnName = columnMapping.Value;
                 if (string.IsNullOrEmpty(newColumnName)) continue;
 
                 if (bFirst)
@@ -85,11 +85,14 @@ public static class GenerateInsertQueryExtensions
                     values.Append(", ");
                 }
 
+                sql.Append("[");
                 sql.Append(newColumnName);
+                sql.Append("]");
                 values.Append(Helpers.SpecialRuleForColumnValue(column.ColumnName));
             }
         }
-        sql.Append(") ");
+        sql.Append(")");
+        sql.Append(Constants.NewLine);
         sql.Append(values.ToString());
         sql.Append(")");
 
@@ -99,6 +102,8 @@ public static class GenerateInsertQueryExtensions
             sql.Append(identityType);
             sql.Append(")");
         }
+
+        sql.Append(";");
 
         return sql.ToString();
     }
