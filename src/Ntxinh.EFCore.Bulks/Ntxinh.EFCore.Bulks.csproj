@@ -5,15 +5,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <PackageId>Ntxinh.EFCore.Bulks</PackageId>
-    <Version>1.0.1</Version>
-    <Authors>ntxinh</Authors>
-    <Company></Company>
-
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <!-- <PackageLicenseExpression>MIT</PackageLicenseExpression> -->
+
+    <PackageId>Ntxinh.EFCore.Bulks</PackageId>
+    <Version>1.0.2</Version>
+    <Company></Company>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/ntxinh/Ntxinh.EFCore.Bulks.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Authors>ntxinh</Authors>
+    <Description>Simple bulk implementation in .NET</Description>
+    <Copyright>Copyright ntxinh</Copyright>
+    <PackageTags>bulk;insert;efcore;net</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +29,7 @@
   <ItemGroup>
     <None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
     <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\..\icon.png" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>
