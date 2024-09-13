@@ -14,13 +14,16 @@ public static class DataTableHelper
         return CreateDataTable<T>([entity]);
     }
 
-    public static DataTable CreateDataTable<T>(IEnumerable<T> item = null)
+    public static DataTable CreateDataTable<T>(IEnumerable<T> item = null, IEnumerable<string> excludeColumns = null)
     {
-        const string EXCLUDE_COLUMN = "DomainEvents";
         var type = typeof(T);
         var properties = type.GetProperties();
         var lstProperties = properties.ToList();
-        lstProperties.RemoveAll(x => x.Name.Equals(EXCLUDE_COLUMN, StringComparison.OrdinalIgnoreCase));
+
+        if (excludeColumns is not null && excludeColumns.Any())
+        {
+            lstProperties.RemoveAll(i => excludeColumns.Any(x => x.Equals(i.Name, StringComparison.OrdinalIgnoreCase)));
+        }
 
         var dataTable = new DataTable
         {
@@ -29,8 +32,6 @@ public static class DataTableHelper
 
         foreach (var info in lstProperties)
         {
-            if (info.Name.Equals(EXCLUDE_COLUMN, StringComparison.OrdinalIgnoreCase))
-                continue;
             dataTable.Columns.Add(new DataColumn(info.Name, Nullable.GetUnderlyingType(info.PropertyType) ?? info.PropertyType));
         }
 

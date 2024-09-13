@@ -8,7 +8,7 @@ https://www.nuget.org/packages/Ntxinh.EFCore.Bulks
 
 ## Features
 
-- `BulkInsertAsync()`
+- `BulkInsertAsync()` and `DataTableHelper.CreateDataTable<T>()`
 - `BulkInsertAsync<T>()`
 - `GenerateInsertQuery<T>()`
 - `GenerateUpdateQuery<T>()`
@@ -43,7 +43,7 @@ public class Test()
 cd src/Ntxinh.EFCore.Bulks
 dotnet build
 cd bin/Debug
-dotnet nuget push Ntxinh.EFCore.Bulks.1.0.x.nupkg --api-key API_KEY --source https://api.nuget.org/v3/index.json
+dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source https://api.nuget.org/v3/index.json
 # dotnet nuget locals --clear all
 ```
 
@@ -55,6 +55,7 @@ dotnet nuget push Ntxinh.EFCore.Bulks.1.0.x.nupkg --api-key API_KEY --source htt
 - [ ] `SqlTransaction`
 - [ ] `SqlBulkCopyOptions`
 - [ ] SQL MERGE
+- [x] `BulkInsertAsync()` and `DataTableHelper.CreateDataTable<T>()`
 - [x] `BulkInsertAsync<T>()`
 - [x] `GenerateInsertQuery<T>()`
 - [x] `GenerateUpdateQuery<T>()`
