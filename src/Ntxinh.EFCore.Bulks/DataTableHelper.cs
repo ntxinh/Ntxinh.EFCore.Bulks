@@ -4,17 +4,21 @@ namespace Ntxinh.EFCore.Bulks;
 
 public static class DataTableHelper
 {
-    public static DataTable CreateDataTable<T>()
+    public static DataTable CreateDataTable<T>(params string[] excludeColumns)
     {
-        return CreateDataTable<T>([]);
+        return CreateDataTable<T>([], excludeColumns);
     }
 
-    public static DataTable CreateDataTable<T>(T entity)
+    public static DataTable CreateDataTable<T>(T entity, params string[] excludeColumns)
     {
-        return CreateDataTable<T>([entity]);
+        if (entity is null)
+        {
+            return CreateDataTable<T>([], excludeColumns);
+        }
+        return CreateDataTable<T>([entity], excludeColumns);
     }
 
-    public static DataTable CreateDataTable<T>(IEnumerable<T> item = null, IEnumerable<string> excludeColumns = null)
+    public static DataTable CreateDataTable<T>(IEnumerable<T> item, params string[] excludeColumns)
     {
         var type = typeof(T);
         var properties = type.GetProperties();
