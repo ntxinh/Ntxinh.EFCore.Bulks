@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ntxinh.EFCore.Bulks;
 
-public static class GenerateDeleteQueryExtensions
+public static class GenerateSelectQueryExtensions
 {
-    public static (string, string) GenerateDeleteQuery<T>(this DbContext dbContext) where T : class
+    public static string GenerateSelectQuery<T>(this DbContext dbContext) where T : class
     {
         // Extract data
         var columnMappingsResult = dbContext.ExtractDbContext(typeof(T));
@@ -22,12 +22,21 @@ public static class GenerateDeleteQueryExtensions
             || primaryKeyColumnName is null || primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
             || columnMappings is null || !columnMappings.Any()
             || connection is null
-        ) return (string.Empty, string.Empty);
+        ) return string.Empty;
 
         // Build query string
-        var sql = new StringBuilder($"DELETE FROM {tableName}{Constants.NewLine}WHERE ");
-        // var sql = new StringBuilder($"DELETE FROM {tableName}{Constants.NewLine}WHERE [{primaryKeyColumnName.Value.Value}] IN @{primaryKeyColumnName.Value.Key};");
+        var sql = new StringBuilder();
+        foreach (var item in columnMappings)
+        {
+            if (sql.Length > 0)
+            {
+                sql.Append(", ");
+            }
+            sql.Append("[");
+            sql.Append(item.Value);
+            sql.Append("]");
+        }
 
-        return (sql.ToString(), primaryKeyColumnName.Value.Value);
+        return sql.ToString();
     }
 }
