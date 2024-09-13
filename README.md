@@ -49,7 +49,6 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 
 ## TODO:
 
-- [ ] `GenerateSelectQuery<T>()`
 - [ ] `GenerateCreateTableQuery<T>()`
 - [ ] `GenerateDropTableQuery<T>()`
 - [ ] `SqlTransaction`
