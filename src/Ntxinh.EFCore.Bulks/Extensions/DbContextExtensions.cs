@@ -46,13 +46,13 @@ public static class DbContextExtensions
                     {
                         ColumnName = x.GetDefaultColumnName(),
                         DataType = x.PropertyInfo.PropertyType.ToString(),
-                        IsNullable = false,
+                        IsNullable = x.IsNullable,
                     },
                     SqlColumn = new ColumnInfoDto
                     {
                         ColumnName = x.GetColumnName(storeObjectIdentifier),
                         DataType = x.GetColumnType(),
-                        IsNullable = false,
+                        IsNullable = x.IsColumnNullable(),
                     },
                 });
             // .ToDictionary(k => k.GetDefaultColumnName(), v => v.GetColumnName(storeObjectIdentifier));
@@ -81,13 +81,13 @@ public static class DbContextExtensions
                     {
                         ColumnName = x.GetDefaultColumnName(),
                         DataType = x.PropertyInfo.PropertyType.ToString(),
-                        IsNullable = false,
+                        IsNullable = x.IsNullable,
                     },
                     SqlColumn = new ColumnInfoDto
                     {
                         ColumnName = x.GetColumnName(storeObjectIdentifier),
                         DataType = x.GetColumnType(),
-                        IsNullable = false,
+                        IsNullable = x.IsColumnNullable(),
                     },
                 })
                 // .ToDictionary(k => k.GetDefaultColumnName(), v => v.GetColumnName(storeObjectIdentifier))

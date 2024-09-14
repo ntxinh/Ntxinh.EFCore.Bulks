@@ -1,11 +1,13 @@
-﻿using Ntxinh.EFCore.Bulks;
+﻿using Microsoft.EntityFrameworkCore;
+
+using Ntxinh.EFCore.Bulks;
 using Ntxinh.EFCore.Bulks.Demo;
 
 Console.WriteLine("Starting...");
 
 using (var _dbContext = new DemoDbContext())
 {
-    // _dbContext.Database.Migrate();
+    _dbContext.Database.Migrate();
 
     var createTableStr = _dbContext.GenerateCreateTableQuery<DemoEntity>();
     Console.WriteLine($"Script Create Table: {createTableStr}");

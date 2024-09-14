@@ -5,13 +5,15 @@ namespace Ntxinh.EFCore.Bulks.Demo;
 public class DemoDbContext : DbContext
 {
     // private const string _connectionString = "Server=tcp:?,1433;Initial Catalog=?;Persist Security Info=True;User ID=?;Password=?;MultipleActiveResultSets=False;Encrypt=True;Trusted_Connection=true;TrustServerCertificate=True;Connection Timeout=30;"
-    private const string _connectionString = "Data Source=?;Initial Catalog=?;Persist Security Info=True;User ID=?;Password=?;Integrated Security=False;ConnectRetryCount=0;MultipleActiveResultSets=True";
+    // private const string _connectionString = "Data Source=?;Initial Catalog=?;Persist Security Info=True;User ID=?;Password=?;Integrated Security=False;ConnectRetryCount=0;MultipleActiveResultSets=True";
 
     public DbSet<DemoEntity> DemoEntities { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseSqlServer(_connectionString);
+        // optionsBuilder.UseSqlServer(_connectionString);
+        // optionsBuilder.UseInMemoryDatabase("Demo");
+        optionsBuilder.UseSqlite("Data Source=demo.db");
 
         base.OnConfiguring(optionsBuilder);
     }
