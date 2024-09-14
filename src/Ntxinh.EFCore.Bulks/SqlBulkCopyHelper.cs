@@ -16,10 +16,17 @@ public static class SqlBulkCopyHelper
 
         try
         {
-            using (connection)
+            // Clone a new SqlConnection to fix:
+            // - Exception: System.InvalidOperationException 'The ConnectionString property has not been initialized'
+            // - 'AppDbContext' disposed.
+            // - Disposing connection to database '' on server ''.
+            // - Opening connection to database '' on server ''.
+            var newSqlConn = new SqlConnection(connection.ConnectionString);
+
+            using (newSqlConn)
             {
-                await connection.OpenAsync(cancellationToken);
-                using (var bulkCopy = new SqlBulkCopy(connection))
+                await newSqlConn.OpenAsync(cancellationToken);
+                using (var bulkCopy = new SqlBulkCopy(newSqlConn))
                 {
                     bulkCopy.DestinationTableName = tableName;
                     bulkCopy.BulkCopyTimeout = 0; // Default 30
@@ -36,8 +43,9 @@ public static class SqlBulkCopyHelper
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
-            return;
+            // Console.WriteLine(ex.Message);
+            // return;
+            throw ex;
         }
     }
 }
