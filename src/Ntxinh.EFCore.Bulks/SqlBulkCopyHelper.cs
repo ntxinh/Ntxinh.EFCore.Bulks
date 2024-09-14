@@ -5,15 +5,8 @@ namespace Ntxinh.EFCore.Bulks;
 
 public static class SqlBulkCopyHelper
 {
-    public static async Task SqlBulkCopyAsync(DataTable data, string tableName, KeyValuePair<string, string>? primaryKeyColumnName, IDictionary<string, string> columnMappings, SqlConnection connection, CancellationToken cancellationToken = default)
+    public static async Task SqlBulkCopyAsync(DataTable data, string tableName, IEnumerable<ColumnMapDto> columnMappings, SqlConnection connection, CancellationToken cancellationToken = default)
     {
-        /* if (primaryKeyColumnName is not null
-            && !primaryKeyColumnName.Equals(default(KeyValuePair<string, string>)))
-        {
-            data.PrimaryKey = [data.Columns[primaryKeyColumnName.Value.Key]];
-            data.Columns[primaryKeyColumnName.Value.Key].AutoIncrement = true;
-        } */
-
         try
         {
             // Clone a new SqlConnection to fix:
@@ -34,7 +27,7 @@ public static class SqlBulkCopyHelper
                     foreach (var item in columnMappings)
                     {
                         // bulkCopy.ColumnMappings.Add("DataTableColumnName2", "DatabaseColumnName2");
-                        bulkCopy.ColumnMappings.Add(item.Key, item.Value);
+                        bulkCopy.ColumnMappings.Add(item.EntityColumn.ColumnName, item.SqlColumn.ColumnName);
                     }
 
                     await bulkCopy.WriteToServerAsync(data, cancellationToken);

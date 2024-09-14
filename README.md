@@ -14,24 +14,43 @@ https://www.nuget.org/packages/Ntxinh.EFCore.Bulks
 - `GenerateUpdateQuery<T>()`
 - `GenerateDeleteQuery<T>()`
 - `GenerateSelectQuery<T>()`
+- `GenerateCreateTableQuery<T>()`
+- `GenerateDropTableQuery<T>()`
 
 ## How to use
+
+- For `BulkInsertAsync` feature, the Connection String must have this config `Persist Security Info=True`
 
 ```cs
 using Ntxinh.EFCore.Bulks;
 
 namespace MyProject;
 
-public class Test()
+using (var _dbContext = new DemoDbContext())
 {
-    IEnumerable<Blog> data = ...;
-    await _dbContext.BulkInsertAsync<Blog>(data);
-    await _dbContext.BulkInsertAsync(typeof(Blog), DataTableHelper.CreateDataTable<Blog>(data));
+    IEnumerable<DemoEntity> data = ...;
+    await _dbContext.BulkInsertAsync<DemoEntity>(data);
+    await _dbContext.BulkInsertAsync(typeof(DemoEntity), DataTableHelper.CreateDataTable<DemoEntity>(data));
 
-    var insertQueryStr = _dbContext.GenerateInsertQuery<Blog>();
-    var updateQueryStr = _dbContext.GenerateUpdateQuery<Blog>();
-    var (deleteQueryStr, primaryKeyColumnName) = _dbContext.GenerateDeleteQuery<Blog>();
-    var selectQueryStr = _dbContext.GenerateSelectQuery<Blog>();
+    var createTableStr = _dbContext.GenerateCreateTableQuery<DemoEntity>();
+    Console.WriteLine($"Script Create Table: {createTableStr}");
+
+    var dropTableStr = _dbContext.GenerateDropTableQuery<DemoEntity>();
+    Console.WriteLine($"Script Drop Table: {dropTableStr}");
+
+    var insertQueryStr = _dbContext.GenerateInsertQuery<DemoEntity>();
+    Console.WriteLine($"Script Insert Table: {insertQueryStr}");
+
+    var (updateQueryStr, primaryKeyColumn) = _dbContext.GenerateUpdateQuery<DemoEntity>();
+    Console.WriteLine($"Script Update Table: {updateQueryStr}");
+    Console.WriteLine($"Script Primary Column Info: {primaryKeyColumn.ColumnName}, {primaryKeyColumn.DataType}");
+
+    var (deleteQueryStr, primaryKeyColumn2) = _dbContext.GenerateDeleteQuery<DemoEntity>();
+    Console.WriteLine($"Script Delete Table: {deleteQueryStr}");
+    Console.WriteLine($"Script Primary Column Info: {primaryKeyColumn2.ColumnName}, {primaryKeyColumn2.DataType}");
+
+    var selectQueryStr = _dbContext.GenerateSelectQuery<DemoEntity>();
+    Console.WriteLine($"Script Select Table: {selectQueryStr}");
 }
 ```
 
@@ -49,8 +68,6 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 
 ## TODO:
 
-- [ ] `GenerateCreateTableQuery<T>()`
-- [ ] `GenerateDropTableQuery<T>()`
 - [ ] `SqlTransaction`
 - [ ] `SqlBulkCopyOptions`
 - [ ] SQL MERGE
@@ -60,3 +77,5 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 - [x] `GenerateUpdateQuery<T>()`
 - [x] `GenerateDeleteQuery<T>()`
 - [x] `GenerateSelectQuery<T>()`
+- [x] `GenerateCreateTableQuery<T>()`
+- [x] `GenerateDropTableQuery<T>()`

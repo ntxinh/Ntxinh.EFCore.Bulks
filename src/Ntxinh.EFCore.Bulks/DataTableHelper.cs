@@ -32,6 +32,7 @@ public static class DataTableHelper
         var dataTable = new DataTable
         {
             TableName = type.Name,
+            MinimumCapacity = item.Count(),
         };
 
         foreach (var info in lstProperties)

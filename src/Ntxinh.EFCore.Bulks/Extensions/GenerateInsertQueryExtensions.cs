@@ -1,4 +1,3 @@
-using System.Data;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,20 +14,26 @@ public static class GenerateInsertQueryExtensions
         var tableName = columnMappingsResult.TableName;
         var primaryKeyColumnName = columnMappingsResult.PrimaryKeyColumn;
         var columnMappings = columnMappingsResult.ColumnMappings;
-        var connection = columnMappingsResult.Connection;
+        var invalidColumnMappings = columnMappingsResult.InvalidColumnMappings;
+        // var connection = columnMappingsResult.Connection;
+
+        var exludesColumns = invalidColumnMappings is not null && invalidColumnMappings.Any()
+            ? invalidColumnMappings.Select(x => x.EntityColumn.ColumnName).ToArray()
+            : null;
 
         // Validate extract data
         if (
             string.IsNullOrEmpty(tableName)
-            || primaryKeyColumnName is null || primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
+            || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
-            || connection is null
+            // || connection is null
         ) return string.Empty;
 
-        var dataTable = DataTableHelper.CreateDataTable<T>();
+        var dataTable = DataTableHelper.CreateDataTable<T>(exludesColumns);
 
         // Build query string
-        var sql = new StringBuilder("INSERT INTO " + tableName + " (");
+        var sql = new StringBuilder();
+        sql.AppendFormat("INSERT INTO {0} (", tableName);
         var values = new StringBuilder("VALUES (");
         bool bFirst = true;
         bool bIdentity = false;
@@ -37,14 +42,12 @@ public static class GenerateInsertQueryExtensions
         // foreach (DataColumn column in dataTable.Columns)
         foreach (var columnMapping in columnMappings)
         {
-            if (columnMapping.Equals(default(KeyValuePair<string, string>))) continue;
-            if (!dataTable.Columns.Contains(columnMapping.Key)) continue;
-            var column = dataTable.Columns[columnMapping.Key];
+            if (!dataTable.Columns.Contains(columnMapping.EntityColumn.ColumnName)) continue;
+            var column = dataTable.Columns[columnMapping.EntityColumn.ColumnName];
 
             if (!column.AutoIncrement
                 && primaryKeyColumnName is not null
-                && !primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
-                && column.ColumnName == primaryKeyColumnName.Value.Key)
+                && column.ColumnName == primaryKeyColumnName.EntityColumn.ColumnName)
             {
                 column.AutoIncrement = true;
             }
@@ -53,28 +56,11 @@ public static class GenerateInsertQueryExtensions
             {
                 bIdentity = true;
 
-                switch (column.DataType.Name)
-                {
-                    case "Int16":
-                        identityType = "smallint";
-                        break;
-                    case "SByte":
-                        identityType = "tinyint";
-                        break;
-                    case "Int64":
-                        identityType = "bigint";
-                        break;
-                    case "Decimal":
-                        identityType = "decimal";
-                        break;
-                    default:
-                        identityType = "int";
-                        break;
-                }
+                identityType = columnMapping.SqlColumn.DataType;
             }
             else
             {
-                var newColumnName = columnMapping.Value;
+                var newColumnName = columnMapping.SqlColumn.ColumnName;
                 if (string.IsNullOrEmpty(newColumnName)) continue;
 
                 if (bFirst)
@@ -85,22 +71,15 @@ public static class GenerateInsertQueryExtensions
                     values.Append(", ");
                 }
 
-                sql.Append("[");
-                sql.Append(newColumnName);
-                sql.Append("]");
+                sql.AppendFormat("[{0}]", newColumnName);
                 values.Append(Helpers.SpecialRuleForColumnValue(column.ColumnName));
             }
         }
-        sql.Append(")");
-        sql.Append(Constants.NewLine);
-        sql.Append(values.ToString());
-        sql.Append(")");
+        sql.AppendFormat("){0}{1})", Constants.NewLine, values.ToString());
 
         if (getReturnId && bIdentity)
         {
-            sql.Append("; SELECT CAST(scope_identity() AS ");
-            sql.Append(identityType);
-            sql.Append(")");
+            sql.AppendFormat("; SELECT CAST(scope_identity() AS {0})", identityType);
         }
 
         sql.Append(";");

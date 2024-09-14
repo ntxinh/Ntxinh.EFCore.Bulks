@@ -6,7 +6,7 @@ namespace Ntxinh.EFCore.Bulks;
 
 public static class GenerateUpdateQueryExtensions
 {
-    public static string GenerateUpdateQuery<T>(this DbContext dbContext) where T : class
+    public static (string, ColumnInfoDto) GenerateUpdateQuery<T>(this DbContext dbContext) where T : class
     {
         // Extract data
         var columnMappingsResult = dbContext.ExtractDbContext(typeof(T));
@@ -15,45 +15,49 @@ public static class GenerateUpdateQueryExtensions
         var tableName = columnMappingsResult.TableName;
         var primaryKeyColumnName = columnMappingsResult.PrimaryKeyColumn;
         var columnMappings = columnMappingsResult.ColumnMappings;
-        var connection = columnMappingsResult.Connection;
+        var invalidColumnMappings = columnMappingsResult.InvalidColumnMappings;
+        // var connection = columnMappingsResult.Connection;
+
+        var exludesColumns = invalidColumnMappings is not null && invalidColumnMappings.Any()
+            ? invalidColumnMappings.Select(x => x.EntityColumn.ColumnName).ToArray()
+            : null;
 
         // Validate extract data
         if (
             string.IsNullOrEmpty(tableName)
-            || primaryKeyColumnName is null || primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
+            || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
-            || connection is null
-        ) return string.Empty;
+            // || connection is null
+        ) return (string.Empty, null);
 
-        var dataTable = DataTableHelper.CreateDataTable<T>();
+        var dataTable = DataTableHelper.CreateDataTable<T>(exludesColumns);
 
         // Build query string
-        var sql = new StringBuilder($"UPDATE {tableName}{Constants.NewLine}SET ");
+        var sql = new StringBuilder();
+        sql.AppendFormat("UPDATE {0}{1}SET ", tableName, Constants.NewLine);
         var values = new StringBuilder();
-        var where = string.Empty;
+        // var where = string.Empty;
         bool bFirst = true;
 
         // foreach (DataColumn column in dataTable.Columns)
         foreach (var columnMapping in columnMappings)
         {
-            if (columnMapping.Equals(default(KeyValuePair<string, string>))) continue;
-            if (!dataTable.Columns.Contains(columnMapping.Key)) continue;
-            var column = dataTable.Columns[columnMapping.Key];
+            if (!dataTable.Columns.Contains(columnMapping.EntityColumn.ColumnName)) continue;
+            var column = dataTable.Columns[columnMapping.EntityColumn.ColumnName];
 
             if (!column.AutoIncrement
                 && primaryKeyColumnName is not null
-                && !primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
-                && column.ColumnName == primaryKeyColumnName.Value.Key)
+                && column.ColumnName == primaryKeyColumnName.EntityColumn.ColumnName)
             {
                 column.AutoIncrement = true;
             }
 
-            var newColumnName = columnMapping.Value;
+            var newColumnName = columnMapping.SqlColumn.ColumnName;
             if (string.IsNullOrEmpty(newColumnName)) continue;
 
             if (column.AutoIncrement)
             {
-                where = $"{Constants.NewLine}WHERE [{primaryKeyColumnName.Value.Value}]=@{primaryKeyColumnName.Value.Key};";
+                // where = $"{Constants.NewLine}WHERE [{primaryKeyColumnName.SqlColumn.ColumnName}]=@{primaryKeyColumnName.EntityColumn.ColumnName};";
             }
             else
             {
@@ -64,12 +68,13 @@ public static class GenerateUpdateQueryExtensions
                     values.Append(", ");
                 }
 
-                values.Append($"[{newColumnName}]={Helpers.SpecialRuleForColumnValue(column.ColumnName)}");
+                values.AppendFormat("[{0}]={1}", newColumnName, Helpers.SpecialRuleForColumnValue(column.ColumnName));
             }
         }
         sql.Append(values.ToString());
-        sql.Append(where);
+        // sql.Append(where);
+        sql.Append(";");
 
-        return sql.ToString();
+        return (sql.ToString(), primaryKeyColumnName.SqlColumn);
     }
 }

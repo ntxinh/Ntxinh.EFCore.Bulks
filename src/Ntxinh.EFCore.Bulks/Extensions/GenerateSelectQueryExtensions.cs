@@ -14,28 +14,27 @@ public static class GenerateSelectQueryExtensions
         var tableName = columnMappingsResult.TableName;
         var primaryKeyColumnName = columnMappingsResult.PrimaryKeyColumn;
         var columnMappings = columnMappingsResult.ColumnMappings;
-        var connection = columnMappingsResult.Connection;
+        // var connection = columnMappingsResult.Connection;
 
         // Validate extract data
         if (
             string.IsNullOrEmpty(tableName)
-            || primaryKeyColumnName is null || primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
+            || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
-            || connection is null
+            // || connection is null
         ) return string.Empty;
 
         // Build query string
-        var sql = new StringBuilder();
+        var sql = new StringBuilder("SELECT ");
         foreach (var item in columnMappings)
         {
-            if (sql.Length > 0)
-            {
-                sql.Append(", ");
-            }
-            sql.Append("[");
-            sql.Append(item.Value);
-            sql.Append("]");
+            sql.AppendFormat("[{0}], ", item.SqlColumn.ColumnName);
         }
+
+        sql.Length--;
+        sql.Length--;
+
+        sql.AppendFormat("{0}FROM {1};", Constants.NewLine, tableName);
 
         return sql.ToString();
     }

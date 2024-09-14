@@ -13,21 +13,26 @@ public static class BulkInsertExtensions
 
         // Destruction data
         var tableName = columnMappingsResult.TableName;
-        var primaryKeyColumnName = columnMappingsResult.PrimaryKeyColumn;
+        // var primaryKeyColumnName = columnMappingsResult.PrimaryKeyColumn;
         var columnMappings = columnMappingsResult.ColumnMappings;
+        var invalidColumnMappings = columnMappingsResult.InvalidColumnMappings;
         var connection = columnMappingsResult.Connection;
+
+        var exludesColumns = invalidColumnMappings is not null && invalidColumnMappings.Any()
+            ? invalidColumnMappings.Select(x => x.EntityColumn.ColumnName).ToArray()
+            : null;
 
         // Validate extract data
         if (
             string.IsNullOrEmpty(tableName)
-            || primaryKeyColumnName is null || primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
+            // || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
             || connection is null
         ) return;
 
-        var dataTable = DataTableHelper.CreateDataTable<T>(data);
+        var dataTable = DataTableHelper.CreateDataTable<T>(data, exludesColumns);
 
-        await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName, primaryKeyColumnName, columnMappings, connection, cancellationToken);
+        await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName/* , primaryKeyColumnName */, columnMappings, connection, cancellationToken);
     }
 
     public static async Task BulkInsertAsync(this DbContext dbContext, Type clrEntityType, DataTable dataTable, CancellationToken cancellationToken = default)
@@ -37,18 +42,18 @@ public static class BulkInsertExtensions
 
         // Destruction data
         var tableName = columnMappingsResult.TableName;
-        var primaryKeyColumnName = columnMappingsResult.PrimaryKeyColumn;
+        // var primaryKeyColumnName = columnMappingsResult.PrimaryKeyColumn;
         var columnMappings = columnMappingsResult.ColumnMappings;
         var connection = columnMappingsResult.Connection;
 
         // Validate extract data
         if (
             string.IsNullOrEmpty(tableName)
-            || primaryKeyColumnName is null || primaryKeyColumnName.Equals(default(KeyValuePair<string, string>))
+            // || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
             || connection is null
         ) return;
 
-        await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName, primaryKeyColumnName, columnMappings, connection, cancellationToken);
+        await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName/* , primaryKeyColumnName */, columnMappings, connection, cancellationToken);
     }
 }

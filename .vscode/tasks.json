@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+      {
+          "label": "build",
+          "command": "dotnet",
+          "type": "process",
+          "args": [
+              "build",
+              "${workspaceFolder}/src/Ntxinh.EFCore.Bulks.Demo/Ntxinh.EFCore.Bulks.Demo.csproj",
+              "/property:GenerateFullPaths=true",
+              "/consoleloggerparameters:NoSummary"
+          ],
+          "problemMatcher": "$msCompile"
+      },
+      {
+          "label": "publish",
+          "command": "dotnet",
+          "type": "process",
+          "args": [
+              "publish",
+              "${workspaceFolder}/src/Ntxinh.EFCore.Bulks.Demo/Ntxinh.EFCore.Bulks.Demo.csproj",
+              "/property:GenerateFullPaths=true",
+              "/consoleloggerparameters:NoSummary"
+          ],
+          "problemMatcher": "$msCompile"
+      },
+      {
+          "label": "watch",
+          "command": "dotnet",
+          "type": "process",
+          "args": [
+              "watch",
+              "run",
+              "${workspaceFolder}/src/Ntxinh.EFCore.Bulks.Demo/Ntxinh.EFCore.Bulks.Demo.csproj",
+              "/property:GenerateFullPaths=true",
+              "/consoleloggerparameters:NoSummary"
+          ],
+          "problemMatcher": "$msCompile",
+          "options": {
+            "cwd": "${workspaceFolder}/src/Ntxinh.EFCore.Bulks.Demo"
+          }
+      },
+  ]
+}

@@ -18,6 +18,7 @@ public static class DbContextExtensions
                     TableName = null,
                     PrimaryKeyColumn = null,
                     ColumnMappings = null,
+                    InvalidColumnMappings = null,
                     Connection = null,
                 };
             }
@@ -30,6 +31,7 @@ public static class DbContextExtensions
                     TableName = null,
                     PrimaryKeyColumn = null,
                     ColumnMappings = null,
+                    InvalidColumnMappings = null,
                     Connection = null,
                 };
             }
@@ -38,12 +40,57 @@ public static class DbContextExtensions
 
             var columnMappings = entityType
                 .GetProperties()
-                .ToDictionary(k => k.GetDefaultColumnName(), v => v.GetColumnName(storeObjectIdentifier));
+                .Select(x => new ColumnMapDto
+                {
+                    EntityColumn = new ColumnInfoDto
+                    {
+                        ColumnName = x.GetDefaultColumnName(),
+                        DataType = x.PropertyInfo.PropertyType.ToString(),
+                        IsNullable = false,
+                    },
+                    SqlColumn = new ColumnInfoDto
+                    {
+                        ColumnName = x.GetColumnName(storeObjectIdentifier),
+                        DataType = x.GetColumnType(),
+                        IsNullable = false,
+                    },
+                });
+            // .ToDictionary(k => k.GetDefaultColumnName(), v => v.GetColumnName(storeObjectIdentifier));
+
+            var validColumnNames = columnMappings.Select(x => x.EntityColumn.ColumnName).ToList();
+            var invalidColumnMappings = clrEntityType
+                .GetProperties()
+                .Where(x => !validColumnNames.Contains(x.Name))
+                .Select(x => new ColumnMapDto
+                {
+                    EntityColumn = new ColumnInfoDto
+                    {
+                        ColumnName = x.Name,
+                        DataType = x.PropertyType.ToString(),
+                        IsNullable = false,
+                    },
+                    SqlColumn = null,
+                });
 
             // Primary Key
             var primaryKey = entityType.FindPrimaryKey();
             var primaryKeyColumn = primaryKey?.Properties
-                .ToDictionary(k => k.GetDefaultColumnName(), v => v.GetColumnName(storeObjectIdentifier))
+                .Select(x => new ColumnMapDto
+                {
+                    EntityColumn = new ColumnInfoDto
+                    {
+                        ColumnName = x.GetDefaultColumnName(),
+                        DataType = x.PropertyInfo.PropertyType.ToString(),
+                        IsNullable = false,
+                    },
+                    SqlColumn = new ColumnInfoDto
+                    {
+                        ColumnName = x.GetColumnName(storeObjectIdentifier),
+                        DataType = x.GetColumnType(),
+                        IsNullable = false,
+                    },
+                })
+                // .ToDictionary(k => k.GetDefaultColumnName(), v => v.GetColumnName(storeObjectIdentifier))
                 .FirstOrDefault();
             // .Select(x => x.GetColumnName(storeObjectIdentifier))
             // .ToList();
@@ -57,6 +104,7 @@ public static class DbContextExtensions
                 TableName = tableName,
                 PrimaryKeyColumn = primaryKeyColumn,
                 ColumnMappings = columnMappings,
+                InvalidColumnMappings = invalidColumnMappings,
                 Connection = sqlConnection,
             };
         }
@@ -68,6 +116,7 @@ public static class DbContextExtensions
                 TableName = null,
                 PrimaryKeyColumn = null,
                 ColumnMappings = null,
+                InvalidColumnMappings = null,
                 Connection = null,
             };
         }
