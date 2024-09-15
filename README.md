@@ -16,6 +16,7 @@ https://www.nuget.org/packages/Ntxinh.EFCore.Bulks
 - `GenerateSelectQuery<T>()`
 - `GenerateCreateTableQuery<T>()`
 - `GenerateDropTableQuery<T>()`
+- `GenerateTruncateTableQuery<T>()`
 
 ## How to use
 
@@ -37,6 +38,9 @@ using (var _dbContext = new DemoDbContext())
 
     var dropTableStr = _dbContext.GenerateDropTableQuery<DemoEntity>();
     Console.WriteLine($"Script Drop Table: {dropTableStr}");
+
+    var truncateTableStr = _dbContext.GenerateTruncateTableQuery<DemoEntity>();
+    Console.WriteLine($"Script Truncate Table: {truncateTableStr}");
 
     var insertQueryStr = _dbContext.GenerateInsertQuery<DemoEntity>();
     Console.WriteLine($"Script Insert Table: {insertQueryStr}");
@@ -79,3 +83,4 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 - [x] `GenerateSelectQuery<T>()`
 - [x] `GenerateCreateTableQuery<T>()`
 - [x] `GenerateDropTableQuery<T>()`
+- [x] `GenerateTruncateTableQuery<T>()`
