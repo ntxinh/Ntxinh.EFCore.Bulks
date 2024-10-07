@@ -44,7 +44,7 @@ using (var _dbContext = new DemoDbContext())
             CategoryId = 2,
         },
     };
-    List<string> bulkUpdateColumns = ["Formula", "CategoryId"];
+    List<string> bulkUpdateColumns = ["Id", "Formula", "CategoryId"];
     var bulkUpdateQueryStr = _dbContext.GenerateBulkUpdateQuery<DemoEntity>(bulkUpdateData, bulkUpdateColumns);
     Console.WriteLine($"Script Bulk Update: {bulkUpdateQueryStr}");
 }
