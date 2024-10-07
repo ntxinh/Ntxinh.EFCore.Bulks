@@ -28,6 +28,25 @@ using (var _dbContext = new DemoDbContext())
 
     var selectQueryStr = _dbContext.GenerateSelectQuery<DemoEntity>();
     Console.WriteLine($"Script Select Table: {selectQueryStr}");
+
+    var bulkUpdateData = new List<DemoEntity>
+    {
+        new DemoEntity
+        {
+            Id = 1,
+            Formula = "New Formula 1",
+            CategoryId = 1,
+        },
+        new DemoEntity
+        {
+            Id = 2,
+            Formula = "New Formula 2",
+            CategoryId = 2,
+        },
+    };
+    List<string> bulkUpdateColumns = ["Formula", "CategoryId"];
+    var bulkUpdateQueryStr = _dbContext.GenerateBulkUpdateQuery<DemoEntity>(bulkUpdateData, bulkUpdateColumns);
+    Console.WriteLine($"Script Bulk Update: {bulkUpdateQueryStr}");
 }
 
 Console.WriteLine("Finished!");

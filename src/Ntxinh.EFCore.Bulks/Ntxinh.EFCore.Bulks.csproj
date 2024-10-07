@@ -8,7 +8,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <PackageId>Ntxinh.EFCore.Bulks</PackageId>
-    <Version>8.0.5</Version>
+    <Version>8.0.6</Version>
     <Company></Company>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
