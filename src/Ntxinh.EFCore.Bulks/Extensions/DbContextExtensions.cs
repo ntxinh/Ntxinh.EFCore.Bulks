@@ -40,12 +40,13 @@ public static class DbContextExtensions
 
             var columnMappings = entityType
                 .GetProperties()
+                .Where(x => x.PropertyInfo is not null)
                 .Select(x => new ColumnMapDto
                 {
                     EntityColumn = new ColumnInfoDto
                     {
                         ColumnName = x.GetDefaultColumnName(),
-                        DataType = x.PropertyInfo.PropertyType.ToString(),
+                        DataType = x.PropertyInfo?.PropertyType?.ToString() ?? x.GetColumnType(),
                         IsNullable = x.IsNullable,
                     },
                     SqlColumn = new ColumnInfoDto

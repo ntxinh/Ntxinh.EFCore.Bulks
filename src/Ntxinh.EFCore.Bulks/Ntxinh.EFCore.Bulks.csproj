@@ -8,7 +8,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <PackageId>Ntxinh.EFCore.Bulks</PackageId>
-    <Version>8.0.8</Version>
+    <Version>8.0.11</Version>
     <Company></Company>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -31,5 +31,10 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
     <None Include="..\..\icon.png" Pack="true" PackagePath="\"/>
   </ItemGroup>
+
+  <!-- <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+  </PropertyGroup> -->
 
 </Project>

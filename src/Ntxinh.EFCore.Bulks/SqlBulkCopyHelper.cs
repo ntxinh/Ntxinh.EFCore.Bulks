@@ -5,7 +5,7 @@ namespace Ntxinh.EFCore.Bulks;
 
 public static class SqlBulkCopyHelper
 {
-    public static async Task SqlBulkCopyAsync(DataTable data, string tableName, IEnumerable<ColumnMapDto> columnMappings, SqlConnection connection, CancellationToken cancellationToken = default)
+    public static async Task SqlBulkCopyAsync(DataTable data, string tableName, IEnumerable<ColumnMapDto> columnMappings, SqlBulkCopyOptionsDto options, string connectionString, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -14,7 +14,7 @@ public static class SqlBulkCopyHelper
             // - 'AppDbContext' disposed.
             // - Disposing connection to database '' on server ''.
             // - Opening connection to database '' on server ''.
-            var newSqlConn = new SqlConnection(connection.ConnectionString);
+            var newSqlConn = new SqlConnection(connectionString);
 
             using (newSqlConn)
             {
@@ -22,8 +22,8 @@ public static class SqlBulkCopyHelper
                 using (var bulkCopy = new SqlBulkCopy(newSqlConn))
                 {
                     bulkCopy.DestinationTableName = tableName;
-                    bulkCopy.BulkCopyTimeout = 0; // Default 30
-                    // bulkCopy.BatchSize = 0; // Default 0
+                    bulkCopy.BulkCopyTimeout = options?.Timeout ?? 30;
+                    bulkCopy.BatchSize = options?.BatchSize ?? 0;
                     foreach (var item in columnMappings)
                     {
                         // bulkCopy.ColumnMappings.Add("DataTableColumnName2", "DatabaseColumnName2");
@@ -42,7 +42,7 @@ public static class SqlBulkCopyHelper
         }
     }
 
-    public static async Task SqlBulkCopyAsync(IEnumerable<SqlBulkCopyDto> tables, SqlBulkCopyOptionsDto options, SqlConnection connection, CancellationToken cancellationToken = default)
+    public static async Task SqlBulkCopyAsync(IEnumerable<SqlBulkCopyDto> tables, SqlBulkCopyOptionsDto options, string connectionString, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -51,7 +51,7 @@ public static class SqlBulkCopyHelper
 
             var ops = (options?.KeepIdentity ?? false) ? SqlBulkCopyOptions.KeepIdentity : SqlBulkCopyOptions.Default;
 
-            await using SqlConnection newSqlConn = new SqlConnection(connection.ConnectionString);
+            await using SqlConnection newSqlConn = new SqlConnection(connectionString);
 
             await newSqlConn.OpenAsync(cancellationToken);
 

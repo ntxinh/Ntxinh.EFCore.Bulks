@@ -23,7 +23,7 @@ public static class GenerateInsertQueryExtensions
 
         // Validate extract data
         if (
-            string.IsNullOrEmpty(tableName)
+            string.IsNullOrWhiteSpace(tableName)
             || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
             // || connection is null
@@ -61,7 +61,7 @@ public static class GenerateInsertQueryExtensions
             else
             {
                 var newColumnName = columnMapping.SqlColumn.ColumnName;
-                if (string.IsNullOrEmpty(newColumnName)) continue;
+                if (string.IsNullOrWhiteSpace(newColumnName)) continue;
 
                 if (bFirst)
                     bFirst = false;

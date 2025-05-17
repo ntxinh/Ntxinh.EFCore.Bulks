@@ -7,7 +7,14 @@ namespace Ntxinh.EFCore.Bulks;
 
 public static class BulkInsertExtensions
 {
-    public static async Task BulkInsertAsync<T>(this DbContext dbContext, IEnumerable<T> data, CancellationToken cancellationToken = default) where T : class
+    public static async Task BulkInsertAsync<T>
+    (
+        this DbContext dbContext,
+        IEnumerable<T> data,
+        SqlBulkCopyOptionsDto options = null,
+        string connectionString = null,
+        CancellationToken cancellationToken = default
+    ) where T : class
     {
         // Extract data
         var columnMappingsResult = dbContext.ExtractDbContext(typeof(T));
@@ -25,19 +32,38 @@ public static class BulkInsertExtensions
 
         // Validate extract data
         if (
-            string.IsNullOrEmpty(tableName)
+            string.IsNullOrWhiteSpace(tableName)
             // || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
-            || connection is null
         )
+            return;
+
+        // Try to extract ConnectionString from DbContext
+        if (string.IsNullOrWhiteSpace(connectionString) && connection is not null)
+        {
+            var builder = new SqlConnectionStringBuilder(connection.ConnectionString);
+            if (!builder.PersistSecurityInfo)
+                return;
+            connectionString = connection.ConnectionString;
+        }
+
+        if (string.IsNullOrWhiteSpace(connectionString))
             return;
 
         var dataTable = DataTableHelper.CreateDataTable<T>(data, exludesColumns);
 
-        await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName/* , primaryKeyColumnName */, columnMappings, connection, cancellationToken);
+        await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName/* , primaryKeyColumnName */, columnMappings, options, connectionString, cancellationToken);
     }
 
-    public static async Task BulkInsertAsync(this DbContext dbContext, Type clrEntityType, DataTable dataTable, CancellationToken cancellationToken = default)
+    public static async Task BulkInsertAsync
+    (
+        this DbContext dbContext,
+        Type clrEntityType,
+        DataTable dataTable,
+        SqlBulkCopyOptionsDto options = null,
+        string connectionString = null,
+        CancellationToken cancellationToken = default
+    )
     {
         // Extract data
         var columnMappingsResult = dbContext.ExtractDbContext(clrEntityType);
@@ -50,17 +76,28 @@ public static class BulkInsertExtensions
 
         // Validate extract data
         if (
-            string.IsNullOrEmpty(tableName)
+            string.IsNullOrWhiteSpace(tableName)
             // || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
-            || connection is null
         )
             return;
 
-        await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName/* , primaryKeyColumnName */, columnMappings, connection, cancellationToken);
+        // Try to extract ConnectionString from DbContext
+        if (string.IsNullOrWhiteSpace(connectionString) && connection is not null)
+        {
+            var builder = new SqlConnectionStringBuilder(connection.ConnectionString);
+            if (!builder.PersistSecurityInfo)
+                return;
+            connectionString = connection.ConnectionString;
+        }
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return;
+
+        await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName/* , primaryKeyColumnName */, columnMappings, options, connectionString, cancellationToken);
     }
 
-    public static async Task BulkInsertMultipleTablesAsync(this DbContext dbContext, IEnumerable<BulkInsertMultipleTablesDto> inputs, SqlBulkCopyOptionsDto options, CancellationToken cancellationToken = default)
+    public static async Task BulkInsertMultipleTablesAsync(this DbContext dbContext, IEnumerable<BulkInsertMultipleTablesDto> inputs, SqlBulkCopyOptionsDto options = null, string connectionString = null, CancellationToken cancellationToken = default)
     {
         var tables = new List<SqlBulkCopyDto>();
         SqlConnection? connection = null;
@@ -76,6 +113,8 @@ public static class BulkInsertExtensions
             var tableName = columnMappingsResult.TableName;
             // var primaryKeyColumnName = columnMappingsResult.PrimaryKeyColumn;
             var columnMappings = columnMappingsResult.ColumnMappings;
+
+            // Get SqlConnection from DbContext
             if (connection is null && columnMappingsResult.Connection is not null)
             {
                 connection = columnMappingsResult.Connection;
@@ -83,10 +122,9 @@ public static class BulkInsertExtensions
 
             // Validate extract data
             if (
-                string.IsNullOrEmpty(tableName)
+                string.IsNullOrWhiteSpace(tableName)
                 // || primaryKeyColumnName is null
                 || columnMappings is null || !columnMappings.Any()
-                || connection is null
             )
                 continue;
 
@@ -98,9 +136,21 @@ public static class BulkInsertExtensions
             });
         }
 
-        if (!tables.Any() || connection is null)
+        if (!tables.Any())
             return;
 
-        await SqlBulkCopyHelper.SqlBulkCopyAsync(tables, options, connection, cancellationToken);
+        // Try to extract ConnectionString from DbContext
+        if (string.IsNullOrWhiteSpace(connectionString) && connection is not null)
+        {
+            var builder = new SqlConnectionStringBuilder(connection.ConnectionString);
+            if (!builder.PersistSecurityInfo)
+                return;
+            connectionString = connection.ConnectionString;
+        }
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return;
+
+        await SqlBulkCopyHelper.SqlBulkCopyAsync(tables, options, connectionString, cancellationToken);
     }
 }

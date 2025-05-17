@@ -24,7 +24,7 @@ public static class GenerateUpdateQueryExtensions
 
         // Validate extract data
         if (
-            string.IsNullOrEmpty(tableName)
+            string.IsNullOrWhiteSpace(tableName)
             || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
             // || connection is null
@@ -53,7 +53,7 @@ public static class GenerateUpdateQueryExtensions
             }
 
             var newColumnName = columnMapping.SqlColumn.ColumnName;
-            if (string.IsNullOrEmpty(newColumnName)) continue;
+            if (string.IsNullOrWhiteSpace(newColumnName)) continue;
 
             if (column.AutoIncrement)
             {

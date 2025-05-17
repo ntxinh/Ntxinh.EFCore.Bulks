@@ -18,7 +18,7 @@ public static class GenerateBulkUpdateQueryExtensions
 
         // Validate extract data
         if (
-            string.IsNullOrEmpty(tableName)
+            string.IsNullOrWhiteSpace(tableName)
             // || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
             // || connection is null

@@ -22,8 +22,6 @@ https://www.nuget.org/packages/Ntxinh.EFCore.Bulks
 
 ## How to use
 
-- For `BulkInsertAsync` feature, the Connection String must have this config `Persist Security Info=True`
-
 ```cs
 using Ntxinh.EFCore.Bulks;
 
@@ -32,8 +30,9 @@ namespace MyProject;
 using (var _dbContext = new DemoDbContext())
 {
     IEnumerable<DemoEntity> data = ...;
-    await _dbContext.BulkInsertAsync<DemoEntity>(data);
-    await _dbContext.BulkInsertAsync(typeof(DemoEntity), DataTableHelper.CreateDataTable<DemoEntity>(data));
+    await _dbContext.BulkInsertAsync<DemoEntity>(data, null, connectionString);
+    await _dbContext.BulkInsertAsync(typeof(DemoEntity), DataTableHelper.CreateDataTable<DemoEntity>(data), null, connectionString);
+    await _dbContext.BulkInsertMultipleTablesAsync([new BulkInsertMultipleTablesDto { ClrEntityType = typeof(DemoEntity), DataTable = DataTableHelper.CreateDataTable<DemoEntity>(data) }], null, connectionString);
 
     var createTableStr = _dbContext.GenerateCreateTableQuery<DemoEntity>();
     Console.WriteLine($"Script Create Table: {createTableStr}");
@@ -85,7 +84,7 @@ using (var _dbContext = new DemoDbContext())
 
 ```sh
 cd src/Ntxinh.EFCore.Bulks
-dotnet build
+dotnet clean && dotnet build
 cd bin/Debug
 dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source https://api.nuget.org/v3/index.json
 # dotnet nuget locals --clear all
@@ -94,8 +93,8 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 ## TODO:
 
 - [ ] `SqlTransaction`: `SqlBulkCopyOptions.UseInternalTransaction` & existing transaction
-- [ ] `SqlBulkCopyOptions`: `SqlBulkCopyOptions.KeepIdentity`
 - [ ] SQL MERGE
+- [x] `SqlBulkCopyOptions`: `SqlBulkCopyOptions.KeepIdentity`
 - [x] `BulkInsertAsync()` and `DataTableHelper.CreateDataTable<T>()`
 - [x] `BulkInsertAsync<T>()`
 - [x] `GenerateInsertQuery<T>()`
