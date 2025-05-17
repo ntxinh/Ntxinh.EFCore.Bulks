@@ -10,6 +10,7 @@ https://www.nuget.org/packages/Ntxinh.EFCore.Bulks
 
 - `BulkInsertAsync()` and `DataTableHelper.CreateDataTable<T>()`
 - `BulkInsertAsync<T>()`
+- `BulkInsertMultipleTablesAsync()`
 - `GenerateInsertQuery<T>()`
 - `GenerateUpdateQuery<T>()`
 - `GenerateDeleteQuery<T>()`
@@ -92,8 +93,8 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 
 ## TODO:
 
-- [ ] `SqlTransaction`
-- [ ] `SqlBulkCopyOptions`
+- [ ] `SqlTransaction`: `SqlBulkCopyOptions.UseInternalTransaction` & existing transaction
+- [ ] `SqlBulkCopyOptions`: `SqlBulkCopyOptions.KeepIdentity`
 - [ ] SQL MERGE
 - [x] `BulkInsertAsync()` and `DataTableHelper.CreateDataTable<T>()`
 - [x] `BulkInsertAsync<T>()`
@@ -105,3 +106,4 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 - [x] `GenerateDropTableQuery<T>()`
 - [x] `GenerateTruncateTableQuery<T>()`
 - [x] `GenerateBulkUpdateQuery<T>()`
+- [x] `BulkInsertMultipleTablesAsync()`
