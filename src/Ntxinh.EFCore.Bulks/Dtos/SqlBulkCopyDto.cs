@@ -19,5 +19,6 @@ public class SqlBulkCopyOptionsDto
     {
         Timeout = 0; // Default 30
         BatchSize = 0; // Default 0
+        KeepIdentity = false; // Default false
     }
 }
