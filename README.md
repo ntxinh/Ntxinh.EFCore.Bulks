@@ -19,6 +19,7 @@ https://www.nuget.org/packages/Ntxinh.EFCore.Bulks
 - `GenerateDropTableQuery<T>()`
 - `GenerateTruncateTableQuery<T>()`
 - `GenerateBulkUpdateQuery<T>()`
+- `GenerateMergeUpsertQueryExtensions<T>()`
 
 ## How to use
 
@@ -93,7 +94,6 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 ## TODO:
 
 - [ ] `SqlTransaction`: `SqlBulkCopyOptions.UseInternalTransaction` & existing transaction
-- [ ] SQL MERGE
 - [x] `SqlBulkCopyOptions`: `SqlBulkCopyOptions.KeepIdentity`
 - [x] `BulkInsertAsync()` and `DataTableHelper.CreateDataTable<T>()`
 - [x] `BulkInsertAsync<T>()`
@@ -106,3 +106,5 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 - [x] `GenerateTruncateTableQuery<T>()`
 - [x] `GenerateBulkUpdateQuery<T>()`
 - [x] `BulkInsertMultipleTablesAsync()`
+- [x] `GenerateMergeUpsertQueryExtensions<T>()`
+- [ ] `GenerateMergeUpsertQueryExtensions<T>(isMulipleData: true, useTempTable: true)`
