@@ -16,6 +16,9 @@ public static class BulkInsertExtensions
         CancellationToken cancellationToken = default
     ) where T : class
     {
+        if (data is null || !data.Any())
+            return;
+
         // Extract data
         var columnMappingsResult = dbContext.ExtractDbContext(typeof(T));
 
@@ -52,6 +55,9 @@ public static class BulkInsertExtensions
 
         var dataTable = DataTableHelper.CreateDataTable<T>(data, exludesColumns);
 
+        if (dataTable is null || dataTable.Rows.Count <= 0)
+            return;
+
         await SqlBulkCopyHelper.SqlBulkCopyAsync(dataTable, tableName/* , primaryKeyColumnName */, columnMappings, options, connectionString, cancellationToken);
     }
 
@@ -65,6 +71,9 @@ public static class BulkInsertExtensions
         CancellationToken cancellationToken = default
     )
     {
+        if (clrEntityType is null || dataTable is null || dataTable.Rows.Count <= 0)
+            return;
+
         // Extract data
         var columnMappingsResult = dbContext.ExtractDbContext(clrEntityType);
 
@@ -104,6 +113,9 @@ public static class BulkInsertExtensions
 
         foreach (var input in inputs)
         {
+            if (input.ClrEntityType is null || input.DataTable is null || input.DataTable.Rows.Count <= 0)
+                continue;
+
             // Extract data
             var columnMappingsResult = dbContext.ExtractDbContext(input.ClrEntityType);
             if (columnMappingsResult is null)
