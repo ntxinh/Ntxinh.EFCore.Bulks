@@ -1,11 +1,13 @@
 using System.Data;
+
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ntxinh.EFCore.Bulks;
 
 public static class GenerateMergeUpsertQueryExtensions
 {
-    public static (string, ColumnInfoDto) GenerateUpdateQuery<T>(this DbContext dbContext) where T : class
+    public static (string, IEnumerable<SqlParameter>, ColumnInfoDto) GenerateMergeUpsertQuery<T>(this DbContext dbContext) where T : class
     {
         // Extract data
         var columnMappingsResult = dbContext.ExtractDbContext(typeof(T));
@@ -27,7 +29,7 @@ public static class GenerateMergeUpsertQueryExtensions
             || primaryKeyColumnName is null
             || columnMappings is null || !columnMappings.Any()
             // || connection is null
-        ) return (string.Empty, null);
+        ) return (string.Empty, null, null);
 
         var dataTable = DataTableHelper.CreateDataTable<T>(exludesColumns);
 
@@ -38,6 +40,8 @@ public static class GenerateMergeUpsertQueryExtensions
 
         var otherInsertColumns = string.Empty;
         var otherValueColumns = string.Empty;
+
+        var parameters = new List<SqlParameter>();
 
         foreach (var columnMapping in columnMappings)
         {
@@ -59,28 +63,37 @@ public static class GenerateMergeUpsertQueryExtensions
             if (string.IsNullOrWhiteSpace(sqlColumnName))
                 continue;
 
-            var entityColumnName = column.ColumnName; // columnMapping.EntityColumn.ColumnName;
+            var entityColumn = columnMapping.EntityColumn;
+            var entityColumnName = entityColumn.ColumnName; // column.ColumnName;
             if (string.IsNullOrWhiteSpace(sqlColumnName))
                 continue;
 
-            otherSelectColumns += Helpers.IsDateColumn(sqlColumnName)
+            var isDateColumn = Helpers.IsDateColumn(sqlColumnName);
+
+            otherSelectColumns += isDateColumn
                 ? string.Empty
                 : $"@{entityColumnName} AS {sqlColumnName}, ";
-            otherSetColumns += Helpers.IsDateColumn(sqlColumnName)
+            otherSetColumns += isDateColumn
                 ? $"{sqlColumnName} = GETUTCDATE(), "
                 : $"{sqlColumnName} = source.{sqlColumnName}, ";
 
             otherInsertColumns += $"{sqlColumnName}, ";
-            otherValueColumns += Helpers.IsDateColumn(sqlColumnName)
+            otherValueColumns += isDateColumn
                 ? "GETUTCDATE(), "
                 : $"source.{sqlColumnName}, ";
+
+            if (!isDateColumn)
+            {
+                parameters.Add(new SqlParameter($"@{entityColumnName}", TypeDefaultValue.GetDefaultValue(entityColumn.DataType)));
+            }
         }
 
         // Remove comma at the end
-        otherSelectColumns = otherSelectColumns.Length >= 2 ? otherSelectColumns.TrimEnd(',', ' ') : otherSelectColumns;
-        otherSetColumns = otherSetColumns.Length >= 2 ? otherSetColumns.TrimEnd(',', ' ') : otherSetColumns;
-        otherInsertColumns = otherInsertColumns.Length >= 2 ? otherInsertColumns.TrimEnd(',', ' ') : otherInsertColumns;
-        otherValueColumns = otherValueColumns.Length >= 2 ? otherValueColumns.TrimEnd(',', ' ') : otherValueColumns;
+        var minLength = 2;
+        otherSelectColumns = otherSelectColumns.Length >= minLength ? otherSelectColumns.TrimEnd(',', ' ') : otherSelectColumns;
+        otherSetColumns = otherSetColumns.Length >= minLength ? otherSetColumns.TrimEnd(',', ' ') : otherSetColumns;
+        otherInsertColumns = otherInsertColumns.Length >= minLength ? otherInsertColumns.TrimEnd(',', ' ') : otherInsertColumns;
+        otherValueColumns = otherValueColumns.Length >= minLength ? otherValueColumns.TrimEnd(',', ' ') : otherValueColumns;
 
         var sql =
         $"""
@@ -95,6 +108,6 @@ public static class GenerateMergeUpsertQueryExtensions
                 VALUES ({otherValueColumns});
         """;
 
-        return (sql, primaryKeyColumnName.SqlColumn);
+        return (sql, parameters, primaryKeyColumnName.SqlColumn);
     }
 }

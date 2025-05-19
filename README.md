@@ -106,5 +106,5 @@ dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source htt
 - [x] `GenerateTruncateTableQuery<T>()`
 - [x] `GenerateBulkUpdateQuery<T>()`
 - [x] `BulkInsertMultipleTablesAsync()`
-- [x] `GenerateMergeUpsertQueryExtensions<T>()`
-- [ ] `GenerateMergeUpsertQueryExtensions<T>(isMulipleData: true, useTempTable: true)`
+- [x] `GenerateMergeUpsertQuery<T>()`
+- [ ] `GenerateMergeUpsertQuery<T>(isMulipleData: true, useTempTable: true)`
