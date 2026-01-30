@@ -87,7 +87,7 @@ using (var _dbContext = new DemoDbContext())
 cd src/Ntxinh.EFCore.Bulks
 dotnet clean && dotnet build
 cd bin/Debug
-dotnet nuget push Ntxinh.EFCore.Bulks.8.0.x.nupkg --api-key API_KEY --source https://api.nuget.org/v3/index.json
+dotnet nuget push Ntxinh.EFCore.Bulks.10.0.x.nupkg --api-key API_KEY --source https://api.nuget.org/v3/index.json
 # dotnet nuget locals --clear all
 ```
 

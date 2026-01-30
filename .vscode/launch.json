@@ -27,7 +27,7 @@
             "WARNING17": "Configuration...' button at the bottom of this file.",
             "WARNING18": "*********************************************************************************",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/Ntxinh.EFCore.Bulks.Demo/bin/Debug/net8.0/Ntxinh.EFCore.Bulks.Demo.dll",
+            "program": "${workspaceFolder}/src/Ntxinh.EFCore.Bulks.Demo/bin/Debug/net10.0/Ntxinh.EFCore.Bulks.Demo.dll",
             "args": [],
             "cwd": "${workspaceFolder}/src/Ntxinh.EFCore.Bulks.Demo",
             "console": "internalConsole",
