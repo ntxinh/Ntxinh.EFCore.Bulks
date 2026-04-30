@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "roslyn": {
+      "command": "dotnet",
+      "args": ["tool", "run", "roslyn-mcp", "--", "--solution", "Ntxinh.EFCore.Bulks.slnx"]
+    }
+  }
+}

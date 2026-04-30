@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Ntxinh.EFCore.Bulks.Demo/Ntxinh.EFCore.Bulks.Demo.csproj" />
+    <Project Path="src/Ntxinh.EFCore.Bulks/Ntxinh.EFCore.Bulks.csproj" />
+  </Folder>
+</Solution>
