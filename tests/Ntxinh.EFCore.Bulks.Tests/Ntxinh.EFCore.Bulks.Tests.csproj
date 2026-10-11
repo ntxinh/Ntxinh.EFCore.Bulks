@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!-- Enforced IDE0005 requires a documentation file; the generated CS1591 noise on
+         undocumented public test types is suppressed below. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: test types carry no XML docs. xUnit needs public test classes (CA1515); the test model
+         exposes a rowversion byte[] (CA1819); test code awaits without ConfigureAwait (CA2007);
+         Assert.Equal constant-array arguments are fine in tests (CA1861). -->
+    <NoWarn>$(NoWarn);CS1591;CA1515;CA1819;CA1861;CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Ntxinh.EFCore.Bulks\Ntxinh.EFCore.Bulks.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
