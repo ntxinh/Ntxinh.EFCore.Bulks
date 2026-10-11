@@ -8,8 +8,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- CS1591: test types carry no XML docs. xUnit needs public test classes (CA1515); the test model
          exposes a rowversion byte[] (CA1819); test code awaits without ConfigureAwait (CA2007);
-         Assert.Equal constant-array arguments are fine in tests (CA1861). -->
-    <NoWarn>$(NoWarn);CS1591;CA1515;CA1819;CA1861;CA2007</NoWarn>
+         Assert.Equal constant-array arguments are fine in tests (CA1861); xUnit collection-fixture
+         types conventionally end in "Collection" (CA1711); tests exercise the non-generic overload
+         on purpose (CA2263). -->
+    <NoWarn>$(NoWarn);CS1591;CA1515;CA1819;CA1861;CA2007;CA1711;CA2263</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
