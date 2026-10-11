@@ -2,88 +2,69 @@
 
 ## Project type
 
-NuGet class library — bulk SQL helpers for EF Core (`BulkInsertAsync`, `BulkInsertMultipleTablesAsync`, `Generate*Query<T>` extensions). Published at https://www.nuget.org/packages/Ntxinh.EFCore.Bulks. **Not** an application — there is no architecture (VSA/Clean/DDD) to defend, just a focused public API surface.
+NuGet class library — transaction-aware bulk insert/update for EF Core on SQL Server (`BulkInsertAsync`, `BulkUpdateAsync`, `GetInsertSql<T>`, `GetTableName<T>`). Published at https://www.nuget.org/packages/Ntxinh.EFCore.Bulks. **Not** an application — just a focused public API surface. Main consumer: `azure_co4_backend` (QXM).
+
+Design: `docs/superpowers/specs/2026-10-11-production-ready-rewrite-design.md`.
 
 ## Layout
 
 ```
-Ntxinh.EFCore.Bulks.slnx          # solution
-Directory.Build.props             # net10.0, nullable enabled, latest-recommended analyzers
-Directory.Packages.props          # central package management (CPM)
-.mcp.json                         # Roslyn MCP server config
-src/
-  Ntxinh.EFCore.Bulks/            # the published library (Microsoft.NET.Sdk, net10.0)
-    Extensions/                   # extension methods are the public API surface
-    Dtos/                         # DTOs for multi-table bulk ops
-    SqlBulkCopyHelper.cs
-    DataTableHelper.cs
-  Ntxinh.EFCore.Bulks.Demo/       # console app with SQLite, exercises the API
-  Ntxinh.EFCore.Bulks.Tests/      # empty (no tests yet)
+Ntxinh.EFCore.Bulks.slnx
+Directory.Build.props             # net8.0;net10.0, nullable, latest-recommended analyzers, warnings as errors
+Directory.Packages.props          # central package management, TFM-conditional EF floors, transitive pinning
+.github/workflows/ci.yml          # build, test, pack; publish on v* tags (Trusted Publishing)
+src/Ntxinh.EFCore.Bulks/
+  BulkExtensions.cs               # public: BulkInsertAsync x2, BulkUpdateAsync
+  SqlTemplateExtensions.cs        # public: GetInsertSql, GetTableName
+  BulkOptions.cs, InsertSqlOptions.cs
+  Internal/                       # TableMap, EntityDataReader, BulkExecutor, MemberSelector
+tests/Ntxinh.EFCore.Bulks.Tests/  # xUnit v3; unit + Testcontainers SQL Server 2022 integration
 ```
 
 ## Stack
 
-- **Target**: `net10.0` only
-- **Library deps**: `Microsoft.EntityFrameworkCore`, `Microsoft.EntityFrameworkCore.SqlServer` (10.0.0)
-- **Demo deps**: `Microsoft.EntityFrameworkCore.Sqlite`, `Microsoft.EntityFrameworkCore.Design`
-- **DB targets**: SQL Server is the primary target (uses `SqlBulkCopy`); demo uses SQLite for ad-hoc verification
-- **Tests**: none scaffolded yet
+- **Targets**: `net8.0` (EF Core SqlServer 8.0.14 floor) and `net10.0` (10.0.0 floor). Floors are the *lowest* supported version — raising them breaks consumers on older patches (NU1605). Raise only to clear a NuGet audit failure.
+- **Runtime deps**: `Microsoft.EntityFrameworkCore.SqlServer` only.
+- **Tests**: xUnit v3, Testcontainers.MsSql. Integration tests need Docker; with Podman prefix commands with
+  `env DOCKER_HOST=unix:///run/user/1000/podman/podman.sock TESTCONTAINERS_RYUK_DISABLED=true`.
 
-## Build / run
+## Build / test
 
 ```bash
-dotnet build                                  # builds the slnx
-dotnet run --project src/Ntxinh.EFCore.Bulks.Demo   # exercise the API end-to-end
+dotnet build -c Release
+dotnet test tests/Ntxinh.EFCore.Bulks.Tests --filter "FullyQualifiedName~TableMapTests"   # unit only
+env DOCKER_HOST=unix:///run/user/1000/podman/podman.sock TESTCONTAINERS_RYUK_DISABLED=true dotnet test
 ```
 
 ## Versioning & publishing
 
-Public API is the value of this project. Treat changes carefully.
-
-- Bump `<Version>` in `src/Ntxinh.EFCore.Bulks/Ntxinh.EFCore.Bulks.csproj` for any release
-- Library version tracks .NET major (currently `10.0.x`)
-- Package metadata (`PackageId`, `Description`, `PackageTags`, `PackageIcon`) lives in that csproj
-- `GeneratePackageOnBuild=true`, so `dotnet build` produces the `.nupkg` under `bin/Debug/`
-- Publish steps are in the README (`dotnet nuget push ...`)
+- SemVer, from the git tag: push `vX.Y.Z` (or `vX.Y.Z-rc.N`) and CI publishes. The csproj `<Version>` is a dev default.
+- `EnablePackageValidation` with `PackageValidationBaselineVersion` = last released version: an accidental breaking change fails `dotnet pack`.
+- Metadata (`PackageId`, `Description`, `PackageTags`, `PackageIcon`) lives in `src/Ntxinh.EFCore.Bulks/Ntxinh.EFCore.Bulks.csproj`.
 
 ## Conventions
 
-- C# **file-scoped namespaces**, **nullable** enabled, **implicit usings**, **`var`** preferred
-- Public API lives under `Extensions/` as static classes with `this DbContext` extension methods. Keep that shape — consumers depend on it
-- New `Generate*Query<T>` helpers should follow the same signature pattern (return tuple `(string sql, ColumnInfo pk)` when the caller needs the PK, otherwise just `string`)
-- Don't take dependencies on additional NuGet packages without explicit confirmation — small surface area is a feature
-- Add new package versions to `Directory.Packages.props`, not to individual csproj files
-- Don't add a `TestProject` SDK type or test framework packages without confirmation — tests are intentionally not scaffolded
-- README is shipped with the package (`PackageReadmeFile`); update it whenever public API changes
+- File-scoped namespaces, nullable, implicit usings, `var` preferred. `.editorconfig` violations are build errors (PascalCase methods incl. tests, no unused usings).
+- Public API = the extension classes and option records in the package root namespace. Everything else is `internal` under `Ntxinh.EFCore.Bulks.Internal`.
+- Values never go into SQL text; identifiers only via `TableMap.Delimit` / `ColumnMap.Delimited`.
+- No new NuGet dependencies (runtime or test) without explicit confirmation.
+- Package versions go in `Directory.Packages.props`.
+- README is shipped with the package — update it (absolute links only) whenever public API changes; add a `CHANGELOG.md` entry for every release.
 
 ## Backwards compatibility
 
-This is a published NuGet package. Consumers exist.
+Published package with consumers.
 
-- **Adding** an extension method or overload: safe
-- **Renaming** or **removing** a public method: breaking change — needs a major version bump and a note in the commit message
-- **Changing return types** on `Generate*Query<T>` helpers: breaking — same rule
-- **Behavioral changes** to `BulkInsertAsync` (e.g., transaction semantics, identity handling): also breaking from the consumer's perspective — flag it explicitly
+- **Adding** a method, overload or option property: safe (minor).
+- **Renaming/removing** public members, changing return types, or changing defaults (`CheckConstraints`, `Timeout`), transaction semantics or identity handling: breaking — major version and a `BREAKING CHANGE:` commit footer.
 
-When in doubt, ask before changing a method signature in `Extensions/`.
+When in doubt, ask before changing a public signature.
 
-## Known issues / tech debt
+## Known gaps (by design, add when a consumer needs them)
 
-- Transitive `System.Security.Cryptography.Xml` 9.0.0 (via `Microsoft.EntityFrameworkCore.Design` in the Demo project) has high-severity CVEs. Build emits `NU1903` warnings. Not shipped to consumers (Design is `PrivateAssets=all`), but worth pinning a safe version (`>= 9.0.5`) in `Directory.Packages.props` if it gets noisy.
-- ~93 nullable warnings (CS8625, CS8603, etc.) in existing code. Nullable is enabled, but the existing code predates it — fix opportunistically, don't do a big bang pass without asking.
-- `Ntxinh.EFCore.Bulks.Tests/` is empty. If a bug needs reproduction or a regression-prone path (e.g., MERGE upsert) needs coverage, ask before scaffolding xUnit + Testcontainers.
-- TODO from README: `GenerateMergeUpsertQuery<T>(isMulipleData: true, useTempTable: true)` and `SqlTransaction` support are not implemented yet.
-
-## Opt-in hardening (deferred)
-
-These were considered during init but not turned on, because they'd surface pre-existing issues:
-
-- `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` — currently blocked by the `NU1903` transitive CVE
-- `<CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>` — same reason
-
-Enable both once `System.Security.Cryptography.Xml` is pinned to a safe version.
+Bulk upsert/MERGE, bulk delete, bulk read, identity output, owned/complex types, inheritance (TPH/TPT/TPC), non-SQL Server providers.
 
 ## Tooling
 
-- `.mcp.json` configures the Roslyn MCP server pointed at `Ntxinh.EFCore.Bulks.slnx` for `/code-review`, `/health-check`, etc.
-- `.editorconfig` is at the repo root — respect it
+- `.mcp.json` configures the Roslyn MCP server pointed at `Ntxinh.EFCore.Bulks.slnx`.
+- `.editorconfig` is at the repo root — respect it.
