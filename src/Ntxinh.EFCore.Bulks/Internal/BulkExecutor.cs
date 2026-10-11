@@ -14,7 +14,7 @@ internal static class BulkExecutor
         Func<SqlConnection, SqlTransaction, CancellationToken, Task<int>> work,
         CancellationToken cancellationToken)
     {
-        if (db.Database.GetDbConnection() is not SqlConnection connection)
+        if (!db.Database.IsRelational() || db.Database.GetDbConnection() is not SqlConnection connection)
         {
             throw new NotSupportedException($"Bulk operations require the SQL Server provider; this DbContext uses {db.Database.ProviderName}.");
         }
