@@ -113,7 +113,7 @@ Four internal units, one file each.
 Built once per `(IModel, Type)` and cached (`ConcurrentDictionary` keyed on the model instance).
 
 - Source: `db.Model.FindEntityType(type)`; `StoreObjectIdentifier.Table(GetTableName(), GetSchema())`.
-- Delimited table name via EF's `ISqlGenerationHelper.DelimitIdentifier(name, schema)` (from `db.GetService<>()`); no hand-rolled quoting.
+- Identifiers are delimited with SQL Server rules (`[name]`, `]` doubled) by one internal helper, `TableMap.Delimit`. EF's `ISqlGenerationHelper` is not used: the InMemory provider (used by the consumer's unit tests) does not register it, and `GetInsertSql` must work there. *(Amended 2026-10-11 after probing EF 8/10.)*
 - Per column: column name (`GetColumnName(storeObject)`), CLR property name, EF compiled getter (`IProperty.GetGetter()`), provider converter (`GetTypeMapping().Converter?.ConvertToProvider`), flags `IsIdentity`, `IsComputed`, `IsKey`.
 - Identity = `GetValueGenerationStrategy() == SqlServerValueGenerationStrategy.IdentityColumn`. Computed = `GetComputedColumnSql() is not null`.
 - Insert column set: all columns except computed; identity excluded unless `KeepIdentity`.
@@ -121,13 +121,13 @@ Built once per `(IModel, Type)` and cached (`ConcurrentDictionary` keyed on the 
 
 ### 3.2 `EntityDataReader` — row streaming
 
-Minimal `DbDataReader` over `IEnumerable<object>` and a `TableMap` column list. Implements `FieldCount`, `Read`, `GetValue`, `GetOrdinal`, `GetName`, `IsDBNull`, `GetFieldType`; everything else throws `NotSupportedException`. `GetValue` = getter → converter → `null` mapped to `DBNull.Value`. Counts rows read (insert return value). Optionally tracks a key set for the duplicate-`matchOn` check.
+Minimal `DbDataReader` over `IEnumerable<object>` and a `TableMap` column list. Implements `FieldCount`, `Read`, `GetValue`, `GetOrdinal`, `GetName`, `IsDBNull`, `GetFieldType`; everything else throws `NotSupportedException`. `GetValue` = getter → converter → `null` mapped to `DBNull.Value`. Counts rows read (insert return value). Inputs are validated before any connection is used: `null` elements and elements that are not the entity type → `ArgumentException`.
 
 ### 3.3 `BulkExecutor` — connection and transaction
 
 1. `db.Database.GetDbConnection() as SqlConnection` (else `NotSupportedException`).
-2. `Database.OpenConnectionAsync()` / `CloseConnectionAsync()` — reference-counted, respects a caller-opened connection. Reusing EF's connection object removes the `PersistSecurityInfo` problem and supports token / Managed Identity auth.
-3. If `Database.CurrentTransaction` exists: use its `GetDbTransaction()` as `SqlTransaction`, do not commit.
+2. Connection lifetime is left to EF: `BeginTransactionAsync` opens the connection when needed and disposing the transaction closes it only if EF opened it, so a caller-opened connection stays open. Reusing EF's connection object removes the `PersistSecurityInfo` problem and supports token / Managed Identity auth.
+3. If `Database.CurrentTransaction` exists: use its `GetDbTransaction()` as `SqlTransaction`, do not commit. A transaction the caller already committed or rolled back (but has not disposed) is no longer current, so the operation starts its own — the consumer calls bulk inserts from `finally` blocks in exactly that state.
 4. Otherwise: `Database.CreateExecutionStrategy().ExecuteAsync(...)` wrapping `BeginTransactionAsync` → work → `CommitAsync`. Required for contexts configured with `EnableRetryOnFailure`.
 5. `SqlBulkCopy` options: `CheckConstraints` (default on), `KeepIdentity` (opt-in); `BatchSize`, `BulkCopyTimeout` from `BulkOptions`; column mappings by ordinal to destination column names.
 
@@ -137,8 +137,9 @@ Within one transaction (§3.3):
 
 1. `SELECT TOP 0 <matchOn cols>, <set cols> INTO #bulk_<guid:N> FROM <table>;` — exact column types.
 2. `SqlBulkCopy` into the temp table with `KeepIdentity` (an identity PK carries its identity property into the temp table).
-3. `UPDATE t SET t.[c1] = s.[c1], … FROM <table> AS t INNER JOIN #bulk_x AS s ON t.[k1] = s.[k1] AND …;` — return value is rows affected.
-4. `DROP TABLE #bulk_x;` (in `finally`).
+3. `SELECT TOP 1 1 FROM #bulk_x GROUP BY <matchOn cols> HAVING COUNT(*) > 1;` — any row → `ArgumentException`. Checked in SQL so SQL Server's own equality and collation decide what counts as a duplicate.
+4. `UPDATE t SET t.[c1] = s.[c1], … FROM <table> AS t INNER JOIN #bulk_x AS s ON t.[k1] = s.[k1] AND …;` — return value is rows affected. Rows whose `matchOn` value is `NULL` match nothing.
+5. `DROP TABLE #bulk_x;` on success. On failure the transaction rollback removes the temp table (its creation is transactional).
 
 No values are ever placed in SQL text. Composite keys work unchanged.
 
@@ -173,7 +174,7 @@ Removing the Demo removes `Microsoft.EntityFrameworkCore.Design` and the `NU1903
 
 ### Central package versions
 
-`Directory.Packages.props` pins EF Core per TFM with `Condition="'$(TargetFramework)' == 'net8.0'"` (8.0.x latest patch) and `'net10.0'` (10.0.x latest patch). Test packages (`xunit.v3`, `Microsoft.NET.Test.Sdk`, `Testcontainers.MsSql`) live in the same file.
+`Directory.Packages.props` pins EF Core per TFM with `Condition="'$(TargetFramework)' == 'net8.0'"` → **8.0.14** and `'net10.0'` → **10.0.0**: the *lowest* version the library supports, so consumers on any later patch restore cleanly (a higher floor than the consumer's own pin is a NU1605 downgrade error; QXM pins 8.0.14). Raise a floor only to fix a NuGet audit (NU190x) failure, to the lowest clean patch. *(Amended 2026-10-11; was "latest patch".)* Test packages (`xunit.v3`, `Microsoft.NET.Test.Sdk`, `Testcontainers.MsSql`) live in the same file.
 
 ### Packaging (SDK built-ins only)
 
@@ -186,7 +187,7 @@ Removing the Demo removes `Microsoft.EntityFrameworkCore.Design` and the `NU1903
 ### CI (`.github/workflows/ci.yml`, ubuntu-latest)
 
 - On PR and push to `main`: restore → build (warnings as errors) → test (both TFMs, Docker available on hosted runners) → pack → upload `.nupkg` artifact.
-- On tag `v*`: same, then publish to nuget.org via **NuGet Trusted Publishing** (OIDC, `NuGet/login`). Fallback: `NUGET_API_KEY` repository secret. README documents the one-time trusted-publishing policy setup on nuget.org.
+- On tag `v*` (including prereleases such as `v2.0.0-rc.1`): same, then publish to nuget.org via **NuGet Trusted Publishing** (OIDC, `NuGet/login`). Fallback: `NUGET_API_KEY` repository secret. README documents the one-time trusted-publishing policy setup on nuget.org.
 
 ## 6. Tests
 
@@ -211,7 +212,7 @@ Removing the Demo removes `Microsoft.EntityFrameworkCore.Design` and the `NU1903
 
 ## 7. Consumer migration (`azure_co4_backend`)
 
-Separate PR, `feature/…` branch off `qa`, squash-merged per its CONTRIBUTING.md. Starts after 2.0.0 is on nuget.org.
+Separate PR, branch off `qa`, squash-merged per its CONTRIBUTING.md. Starts once **2.0.0-rc.1** is on nuget.org; QA validates the published prerelease, then the consumer moves to 2.0.0. *(Amended: rc step added so QA exercises the exact published package.)*
 
 | Change | Sites | Approach |
 |---|---|---|
@@ -219,8 +220,8 @@ Separate PR, `feature/…` branch off `qa`, squash-merged per its CONTRIBUTING.m
 | `GenerateInsertQuery<T>()` | 17 | New consumer extension `InsertSql<T>(this DbContext)` calling `GetInsertSql<T>` with `UtcNowColumns = [CreatedAt, UpdatedAt, CreatedOn, UpdatedOn]` — preserves old output |
 | `BulkInsertAsync(…, options: null, connectionString: …)` | 6 | Drop the two arguments |
 | `BulkInsertJob(Guid, Type, DataTable)` + queue sites | 1 + 9 | `BulkInsertJob(Guid, Type, IReadOnlyList<object>)`; handler calls non-generic `BulkInsertAsync` |
-| `BulkInsertMultipleTablesAsync` | 5 | `BeginTransactionAsync` → `BulkInsertAsync` per table → `CommitAsync` |
-| `GenerateBulkUpdateQuery` + `ExecuteSqlRawAsync` | 5 | `BulkUpdateAsync(rows, set: …, matchOn: …)`; `matchOn` explicit everywhere (two sites match on non-PK: `SlabBidHeaderTotals.SlabBidHeaderId`, `SlabOrderApplicationTotals.OrderApplicationId`) |
+| `BulkInsertMultipleTablesAsync` | 5 | Consumer helper `BulkInsertTablesAsync`: own transaction (or the current one) → `BulkInsertAsync` per table → commit. Uses `Timeout = TimeSpan.Zero`, because the old `new SqlBulkCopyOptionsDto()` set `Timeout = 0` (no limit) |
+| `GenerateBulkUpdateQuery` + `ExecuteSqlRawAsync` | 4 live | `BulkUpdateAsync(rows.DistinctBy(key), set: …, matchOn: …)`; `matchOn` explicit everywhere (two sites match on non-PK: `SlabBidHeaderTotals.SlabBidHeaderId`, `SlabOrderApplicationTotals.OrderApplicationId`). `DistinctBy` keeps the first row per key, which is what the old `CASE WHEN` produced |
 | `GenerateDeleteQuery<T>().Item1.Replace(";", "")` | 1 | `$"DELETE FROM {AppDbContext.GetTableName<OrderBillingCode>()}"` |
 | `SlabBidApplicationTotalRepositoryCharacterizationTests` | 1 | Update to new calls; serves as regression check |
 
