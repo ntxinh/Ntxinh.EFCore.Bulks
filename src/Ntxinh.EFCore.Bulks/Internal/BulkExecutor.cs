@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Ntxinh.EFCore.Bulks.Internal;
 
-/// <summary>Runs bulk work on the DbContext's own SqlConnection inside a transaction.</summary>
+/// <summary>Runs bulk work on the DbContext's own SqlConnection, inside the caller's transaction or an owned one.</summary>
 internal static class BulkExecutor
 {
     public static async Task<int> RunAsync(
@@ -19,10 +19,22 @@ internal static class BulkExecutor
             throw new NotSupportedException($"Bulk operations require the SQL Server provider; this DbContext uses {db.Database.ProviderName}.");
         }
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var result = await work(connection, (SqlTransaction)transaction.GetDbTransaction(), cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return result;
+        // EF clears CurrentTransaction on commit/rollback, so a finished-but-undisposed caller transaction is not joined.
+        if (db.Database.CurrentTransaction is { } callerTransaction)
+        {
+            return await work(connection, (SqlTransaction)callerTransaction.GetDbTransaction(), cancellationToken);
+        }
+
+        // Retrying strategies (EnableRetryOnFailure) reject transactions opened outside the strategy.
+        return await db.Database.CreateExecutionStrategy().ExecuteAsync(
+            async ct =>
+            {
+                await using var transaction = await db.Database.BeginTransactionAsync(ct);
+                var result = await work(connection, (SqlTransaction)transaction.GetDbTransaction(), ct);
+                await transaction.CommitAsync(ct);
+                return result;
+            },
+            cancellationToken);
     }
 
     public static async Task<int> CopyAsync(
